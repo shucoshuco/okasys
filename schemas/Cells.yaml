@@ -1,0 +1,245 @@
+openapi: 3.0.0
+info:
+  title: Cells
+  version: '1.0'
+  contact:
+    name: Félix García
+    email: fgpanda@hotmail.com
+  description: This API let access different details about cells
+servers:
+  - url: 'http://localhost:3000'
+    description: Local
+paths:
+  '/cells/{cellId}':
+    parameters:
+      - schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '^[A-Za-z0-9-_]+'
+        name: cellId
+        in: path
+        required: true
+        description: Id of the cell to delete
+    get:
+      summary: Get Cell by Id
+      tags: []
+      responses:
+        '200':
+          $ref: '#/components/responses/CellById'
+        '404':
+          $ref: '#/components/responses/Error'
+      operationId: get-cell-by-id
+      description: Retrieve the information of the cell with the matching cell ID.
+    patch:
+      summary: Update Cell Information by Id
+      operationId: patch-cell
+      responses:
+        '200':
+          $ref: '#/components/responses/CellById'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+      description: Update the information of an existing cell.
+      requestBody:
+        $ref: '#/components/requestBodies/CellNoValidated'
+    delete:
+      summary: Delete cell by Id
+      operationId: delete-cell-by-id
+      responses:
+        '200':
+          description: OK
+      description: Delete cell y Id
+  /cells:
+    post:
+      summary: Create New Cell
+      operationId: post-cell
+      responses:
+        '200':
+          $ref: '#/components/responses/CellById'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+      description: Create a new cell.
+      requestBody:
+        $ref: '#/components/requestBodies/CellNoValidated'
+    parameters: []
+  /board:
+    get:
+      summary: Build a random game
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cells:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Cell'
+      operationId: get-board
+      description: Builds a new board with a number of cells. This endpoint divides the board on the same number of cells of each level.
+      parameters:
+        - schema:
+            type: integer
+          in: query
+          name: number-of-cells
+          description: Number of cells of the board
+components:
+  schemas:
+    Cell:
+      title: Cell
+      type: object
+      description: Details of a given Cell
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the given user.
+        name:
+          type: string
+        description:
+          type: string
+        level:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        items:
+          type: integer
+          description: Set to true if the user's email has been verified.
+      required:
+        - name
+        - description
+        - level
+        - items
+    CellNoValidated:
+      title: Cell not validated
+      type: object
+      description: Details of a given Cell without validation
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the given user.
+        name:
+          type: string
+        description:
+          type: string
+        level:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        items:
+          type: integer
+          description: Set to true if the user's email has been verified.
+    Error:
+      title: Error
+      type: object
+      properties:
+        errorCode:
+          type: string
+          minLength: 1
+        errorDescription:
+          type: string
+          minLength: 1
+        parameters:
+          type: array
+          uniqueItems: true
+          minItems: 0
+          items:
+            required:
+              - name
+              - value
+            properties:
+              name:
+                type: string
+                minLength: 1
+              value:
+                type: string
+                minLength: 1
+      required:
+        - errorCode
+        - errorDescription
+  securitySchemes:
+    APIKey1:
+      name: Default API Key
+      type: apiKey
+      in: header
+  responses:
+    CellById:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              cell:
+                $ref: '#/components/schemas/Cell'
+          examples:
+            example-1:
+              value:
+                cell:
+                  id: 000-111
+                  name: Kisses
+                  description: Kisses whatever
+                  level: user@example.com
+                  imageUrl: 'http://host.com/image.png'
+                  items: 0
+    Error:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            description: ''
+            type: object
+            x-examples:
+              example-1:
+                errors:
+                  - errorCode: ERROR_CODE
+                    errorDescription: Error description
+                    parameters:
+                      - name: paramName
+                        value: paramValue
+            properties:
+              errors:
+                type: array
+                uniqueItems: true
+                minItems: 1
+                items:
+                  $ref: '#/components/schemas/Error'
+            required:
+              - errors
+          examples:
+            example-1:
+              value:
+                errors:
+                  - errorCode: string
+                    errorDescription: string
+                    parameters:
+                      - name: string
+                        value: string
+  requestBodies:
+    Cell:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Cell'
+      description: ''
+    CellNoValidated:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CellNoValidated'
+security:
+  - API Key - 1: []

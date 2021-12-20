@@ -1,0 +1,22 @@
+logging:
+  level:
+    root: INFO
+    org.keycloak: DEBUG
+    org.springframework.security: DEBUG
+    es.felix.oka.cells: DEBUG
+
+spring:
+  data:
+    mongodb:
+      authentication-database: okadb
+      username: dbuser1
+      password: dbuser1
+      database: okadb
+      port: 27017
+      host: localhost
+
+keycloak:
+  auth-server-url: http://localhost:8888/auth
+  realm: Oka
+  resource: oka-client
+  public-client: true

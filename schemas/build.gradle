@@ -1,0 +1,32 @@
+buildscript {
+	repositories {
+		mavenLocal()
+		maven { url "https://repo1.maven.org/maven2" }
+	}
+	dependencies {
+		classpath "org.openapitools:openapi-generator-gradle-plugin:5.0.0"
+	}
+}
+
+plugins {
+  id "org.openapi.generator" version "5.3.0"
+}
+
+apply plugin: 'org.openapi.generator'
+
+openApiGenerate {
+	generatorName = "spring"
+	inputSpec = "./Cells.yaml"
+	outputDir = "$buildDir/generated"
+	apiPackage = "es.felix.oka.schemas"
+	modelPackage = "es.felix.oka.schemas.model"
+	id = "oka-schemas"
+	groupId = "es.felix.oka"
+	version = "0.0.1"
+	modelNameSuffix = "ApiObj"
+	generateAliasAsModel = true
+	skipOperationExample = true
+	configOptions = [
+		interfaceOnly: "true"
+	]
+}

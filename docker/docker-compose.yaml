@@ -1,0 +1,106 @@
+version: "3.8"
+services:
+  # Mongo DB server
+  mongodb:
+    image : mongo:latest
+    container_name: oka-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin1
+      MONGO_INITDB_ROOT_PASSWORD: admin1
+      MONGO_INITDB_DATABASE: okadb
+    volumes:
+      - ./init/mongodb/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - mongo-volume:/data/db
+    ports:
+      - 27017:27017
+    restart: unless-stopped
+
+  # Keycloak server
+  keycloak:
+    image: quay.io/keycloak/keycloak:15.0.2
+    container_name: oka-keycloak
+    ports:
+      - 8888:8080
+    environment:
+      KEYCLOAK_USER: admin1
+      KEYCLOAK_PASSWORD: admin1
+    volumes:
+      - ./init/keycloak:/opt/jboss/keycloak/imports
+    command: 
+      - "-b 0.0.0.0 -Dkeycloak.import=/opt/jboss/keycloak/imports/realm-export.json"
+
+  # Kafka service here
+  kafka-servie:
+    image: landoop/fast-data-dev:latest
+    container_name: oka-kafka
+    ports:
+      - "3030:3030"
+      - "9092:9092"
+    environment:
+      ADV_HOST: 127.0.0.1
+      BROKER_PORT: 9092
+
+  # Zipkin service here
+  zipkin-server:
+    image: openzipkin/zipkin
+    container_name: oka-zipkin
+    ports:
+      - "9411:9411"
+
+  # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/docker.html
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+    container_name: oka-elasticsearch
+    volumes:
+      - es-volume:/usr/share/elasticsearch/data
+    environment:
+      - http.host=0.0.0.0
+      - transport.host=localhost
+      - network.host=0.0.0.0
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  # Graylog: https://hub.docker.com/r/graylog/graylog/
+  graylog:
+    image: graylog/graylog:4.2
+    container_name: oka-graylog
+    volumes:
+      - graylog-volume:/usr/share/graylog/data
+    environment:
+      # CHANGE ME (must be at least 16 characters)!
+      - GRAYLOG_PASSWORD_SECRET=thegraylogpassword1
+      # Password: admin1
+      - GRAYLOG_ROOT_PASSWORD_SHA2=25f43b1486ad95a1398e3eeb3d83bc4010015fcc9bedb35b432e00298d5021f7
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://127.0.0.1:9000/
+      - GRAYLOG_MONGODB_URI=mongodb://dbgraylog:dbgraylog@mongo:27017/graylogdb?authSource=okadb
+    entrypoint: /usr/bin/tini -- wait-for-it elasticsearch:9200 --  /docker-entrypoint.sh
+    links:
+      - mongodb:mongo
+      - elasticsearch
+    restart: always
+    depends_on:
+      - mongodb
+      - elasticsearch
+    ports:
+      # Graylog web interface and REST API
+      - 9000:9000
+      # Syslog TCP
+      - 1514:1514
+      # Syslog UDP
+      - 1514:1514/udp
+      # GELF TCP
+      - 12201:12201
+      # GELF UDP
+      - 12201:12201/udp
+
+# Volumes for persisting data, see https://docs.docker.com/engine/admin/volumes/volumes/
+volumes:
+  mongo-volume:
+    driver: local
+  es-volume:
+    driver: local
+  graylog-volume:
+    driver: local
